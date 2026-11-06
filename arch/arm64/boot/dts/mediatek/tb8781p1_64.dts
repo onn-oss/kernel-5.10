@@ -1,0 +1,340 @@
+// SPDX-License-Identifier: (GPL-2.0 OR MIT)
+/*
+ * Copyright (C) 2021 MediaTek Inc.
+ */
+/dts-v1/;
+/plugin/;
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+#include <dt-bindings/interrupt-controller/irq.h>
+#include <dt-bindings/pinctrl/mt6789-pinfunc.h>
+#include "mediatek/cust_mt6789_camera.dtsi"
+
+&chosen {
+};
+
+&android {
+	hardware = "mt8781";
+};
+
+&mtk_leds {
+	compatible = "mediatek,disp-leds";
+
+	backlight {
+		led_mode = <4>;
+		gate_enable = <1>;
+		pwm_config = <0 1 0 0 0>;
+		min-brightness=<48>;
+	};
+};
+
+&pio {
+	mtkfb_pins_lcm_led_en1: lcm_led_en1_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO12__FUNC_GPIO12>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	mtkfb_pins_lcm_led_en0: lcm_led_en0_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO12__FUNC_GPIO12>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	mtkfb_pins_lcm_rst_out1_gpio: lcm_rst_out1_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO85__FUNC_GPIO85>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	mtkfb_pins_lcm_rst_out0_gpio: lcm_rst_out0_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO85__FUNC_GPIO85>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	mtkfb_pins_lcm_dsi_te: lcm_dsi_te {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO83__FUNC_DSI_TE>;
+		};
+	};
+};
+
+&mtkfb {
+	pinctrl-names = "lcm_led_en1_gpio", "lcm_led_en0_gpio",
+		"lcm_rst_out1_gpio", "lcm_rst_out0_gpio",
+		"mode_te_te";
+	pinctrl-0 = <&mtkfb_pins_lcm_led_en1>;
+	pinctrl-1 = <&mtkfb_pins_lcm_led_en0>;
+	pinctrl-2 = <&mtkfb_pins_lcm_rst_out1_gpio>;
+	pinctrl-3 = <&mtkfb_pins_lcm_rst_out0_gpio>;
+	pinctrl-4 = <&mtkfb_pins_lcm_dsi_te>;
+	status = "okay";
+};
+
+&dispsys_config {
+	pinctrl-names =
+		"lcm_rst_out1_gpio", "lcm_rst_out0_gpio",
+		"mode_te_te";
+	pinctrl-0 = <&mtkfb_pins_lcm_rst_out1_gpio>;
+	pinctrl-1 = <&mtkfb_pins_lcm_rst_out0_gpio>;
+	pinctrl-2 = <&mtkfb_pins_lcm_dsi_te>;
+	status = "okay";
+};
+
+&dsi0 {
+	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+	panel1@0 {
+		compatible = "boe,hx83102,wuxga2000,vdo";
+		reg = <0>;
+		pm-enable-gpios = <&pio 151 0>;
+		reset-gpios = <&pio 85 0>;
+		bias-gpios= <&pio 48 0>, <&pio 47 0>;
+		pinctrl-names = "default";
+		port {
+			panel_in1: endpoint {
+				remote-endpoint = <&dsi_out>;
+			};
+		};
+	};
+	panel2@0 {
+		compatible = "truly,td4330,cmd";
+		reg = <1>;
+		pm-enable-gpios = <&pio 12 0>;
+		reset-gpios = <&pio 85 0>;
+		gate-ic = <4831>;
+		pinctrl-names = "default";
+		port {
+			panel_in2: endpoint {
+				remote-endpoint = <&dsi_out>;
+			};
+		};
+	};
+	ports {
+		port {
+			dsi_out: endpoint {
+				remote-endpoint = <&panel_in1>;
+			};
+		};
+	};
+};
+
+/* GPS GPIO standardization start */
+&pio {
+	gps_pins_default: gps_default {
+	};
+	gps_l1_lna_pins_ol: gps_l1_lna@0 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO25__FUNC_GPIO25>;
+			output-low;
+		};
+	};
+	gps_l1_lna_pins_dsp_ctrl: gps_l1_lna@1 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO25__FUNC_GPS_L1_ELNA_EN>;
+		};
+	};
+	gps_l1_lna_pins_oh: gps_l1_lna@2 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO25__FUNC_GPIO25>;
+			output-high;
+		};
+	};
+	gps_l5_lna_pins_ol: gps_l5_lna@0 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO26__FUNC_GPIO26>;
+			output-low;
+		};
+	};
+	gps_l5_lna_pins_dsp_ctrl: gps_l5_lna@1 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO26__FUNC_GPS_L5_ELNA_EN>;
+		};
+	};
+	gps_l5_lna_pins_oh: gps_l5_lna@2 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO26__FUNC_GPIO26>;
+			output-high;
+		};
+	};
+};
+&gps {
+	pinctrl-names = "default",
+		"gps_l1_lna_disable",
+		"gps_l1_lna_dsp_ctrl",
+		"gps_l1_lna_enable",
+		"gps_l5_lna_disable",
+		"gps_l5_lna_dsp_ctrl",
+		"gps_l5_lna_enable";
+	pinctrl-0 = <&gps_pins_default>;
+	pinctrl-1 = <&gps_l1_lna_pins_ol>;
+	pinctrl-2 = <&gps_l1_lna_pins_dsp_ctrl>;
+	pinctrl-3 = <&gps_l1_lna_pins_oh>;
+	pinctrl-4 = <&gps_l5_lna_pins_ol>;
+	pinctrl-5 = <&gps_l5_lna_pins_dsp_ctrl>;
+	pinctrl-6 = <&gps_l5_lna_pins_oh>;
+	status = "okay";
+};
+/* GPS GPIO standardization end */
+
+#include "mediatek/cust_mt6789_touch_nt36xxx_1200x2000.dtsi"
+#include "mediatek/cust_mt6789_camera_v4l2.dtsi"
+
+&i2c3 {
+	/*
+	was4780: was4780@42 {
+		compatible = "willsemi,was4780-i2c";
+		reg = <0x42>;
+		status = "okay";
+	};
+	*/
+	fsa4480: fsa4480@42 {
+		compatible = "qcom,fsa4480-i2c";
+		reg = <0x42>;
+		status = "okay";
+	};
+
+        sc89601d_slave@6B {
+                compatible = "sc,sc89601d_slave";
+                reg = <0x6B>;
+                status = "okay";
+                sc,gpio_slave_en = <&pio 153 0>;
+                charger_name = "secondary_chg";
+                alias_name = "sc89601d_slave";
+        };
+
+	speaker_amp@58 {
+		compatible = "awinic,aw87xxx_pa";
+		reg = <0x58>;
+		reset-gpio = <&pio 156 0>;
+		dev_index = < 0 >;
+		status = "okay";
+	};
+
+	speaker_amp@5b {
+		compatible = "awinic,aw87xxx_pa";
+		reg = <0x5b>;
+		reset-gpio = <&pio 158 0>;
+		dev_index = < 1 >;
+		status = "okay";
+	};
+};
+/*
+&i2c7 {
+	speaker_amp@58 {
+		compatible = "awinic,aw87xxx_pa";
+		reg = <0x58>;
+		reset-gpio = <&pio 156 0>;
+		dev_index = < 0 >;
+		status = "okay";
+	};
+
+	speaker_amp@5b {
+		compatible = "awinic,aw87xxx_pa";
+		reg = <0x5b>;
+		reset-gpio = <&pio 158 0>;
+		dev_index = < 1 >;
+		status = "okay";
+	};
+};
+*/
+&i2c6 {
+	spk: speaker_amp@5c {
+		compatible = "richtek,rt5512";
+		#sound-dai-cells = <0>;
+		reg = <0x5c>;
+		status = "okay";
+		sound-name-prefix = "Left";
+	};
+	lp6280s@3e {
+	compatible = "lcd_bias,lp6280s";
+	reg = <0x3e>;
+	id = <6>;
+	status = "okay";
+	};
+	
+	mp3314g@28 {
+		compatible = "lcd_backlight,mp3314g";
+		reg = <0x28>;
+		id = <6>;
+		status = "okay";
+	};
+
+	hx9023s: hx9023s@2a {
+		compatible = "tyhx,hx9023s";
+		reg = <0x2a>;
+ 		tyhx,irq-gpio = <&pio 13 0x0>;
+		tyhx,irq-flags = <2>; //1:rising 2:falling
+		tyhx,channel-flag = <0x7>;
+		//tyhx,power-supply-type =<1>;//可选，如何供电，如果有的话，客户自行移植
+		status = "okay";
+	};
+	
+};
+
+/* accdet start */
+&accdet {
+	accdet-mic-vol = <6>;
+	headset-mode-setting = <0x500 0x500 1 0x1f0 0x800 0x800 0x20 0x44>;
+	accdet-plugout-debounce = <1>;
+	accdet-mic-mode = <1>;
+	headset-eint-level-pol = <8>;
+	headset-three-key-threshold = <0 80 220 400>;
+	headset-three-key-threshold-CDD = <0 121 192 600>;
+	headset-four-key-threshold = <0 58 121 192 400>;
+	pinctrl-names = "default", "state_eint_as_int";
+	pinctrl-0 = <&accdet_pins_default>;
+	pinctrl-1 = <&accdet_pins_eint_as_int>;
+	status = "okay";
+};
+&pio {
+	accdet_pins_default: accdetdefault {
+	};
+	accdet_pins_eint_as_int: accdeteint@0 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO10__FUNC_GPIO10>;
+			slew-rate = <0>;
+			bias-disable;
+		};
+	};
+};
+/* accdet end */
+
+&hall_1{
+pinctrl-names = "default", "hall_eint";
+	pinctrl-0 = <&hall_eint_default>;
+	pinctrl-1 = <&hall_eint_as_int>;
+    interrupt-parent = <&pio>;
+    interrupts = <7 IRQ_TYPE_LEVEL_LOW 7 0>;
+	debouonce = <0>;
+	status = "okay";
+};
+&pio {
+	hall_eint_default: halldefault {
+	};
+	hall_eint_as_int: halleint{
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO7__FUNC_GPIO7>;
+			slew-rate = <0>;
+			bias-disable;
+		};
+	};
+};
+
+&sound {
+	mediatek,spk-i2s = <3 0>;
+	mediatek,speaker-codec {
+		sound-dai = <&spk>;
+	};
+};
+
+#include <tb8781p1_64/cust.dtsi>
+/*End of this file, DO NOT ADD ANYTHING HERE*/

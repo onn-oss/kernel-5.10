@@ -1,0 +1,90 @@
+/* SPDX-License-Identifier: GPL-2.0 */
+/*  Himax Android Driver Sample Code for HX83122A chipset
+ *
+ *  Copyright (C) 2022 Himax Corporation.
+ *
+ *  This software is licensed under the terms of the GNU General Public
+ *  License version 2,  as published by the Free Software Foundation,  and
+ *  may be copied,  distributed,  and modified under those terms.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ */
+
+#include "himax_platform.h"
+#include "himax_common.h"
+#include "himax_ic_core.h"
+#include <linux/slab.h>
+
+
+
+#define HX83122A_DATA_ADC_NUM 48
+
+
+
+#define HX83122A_ADDR_TCON_ON_RST 0x80020020
+
+#define HX83122A_REG_ICID 0x900000d0
+#define HX83122A_ISRAM_NUM  1
+#define HX83122A_ISRAM_SZ 131072
+#define HX83122A_ISRAM_ADDR	0x20000000
+#define HX83122A_DSRAM_NUM  1
+#define HX83122A_DSRAM_SZ 131072
+#define HX83122A_DSRAM_ADDR	0x10000000
+#define HX83122A_FLASH_SIZE 261120
+
+
+#define HX83122A_ADDR_EN_HW_CRC 0x80010000
+#define HX83122A_DATA_EN_HW_CRC 0x0000ECCE
+
+#define HX122A_CFG_BASE  0x10000400 //0x10000400
+#define HX122A_FUNC_BASE 0x10000100 //0x10000100
+#define HX83122A_FUNC_HSEN                 (HX122A_FUNC_BASE+0x14) //0x10000114
+#define HX83122A_FUNC_SMWP                 (HX122A_FUNC_BASE+0x10) //0x10000110
+#define HX83122A_FUNC_HEADPHONE            (HX122A_FUNC_BASE+0xE8) //0x100001E8
+#define HX83122A_FUNC_USB_DETECT           (HX122A_FUNC_BASE+0x38) //0x10000138
+#define HX83122A_FUNC_AP_NOTIFY_FW_SUS     (HX122A_FUNC_BASE+0xD0) //0x100001D0
+#define HX83122A_ADDR_RAWOUT_SEL           (HX122A_CFG_BASE+0x2EC) //0x100006EC
+// 0x10000118
+// #define hx122a_fw_addr_selftest_addr_en     (HX122A_FUNC_BASE+0x18)
+// 0x10000124
+// #define hx122a_fw_addr_selftest_result_addr (HX122A_FUNC_BASE+0x24)
+// 0x1000011c
+// #define hx122a_fw_addr_criteria_addr        (HX122A_FUNC_BASE+0x1C)
+#define HX83122A_ADDR_SET_FRAME            (HX122A_CFG_BASE+0x294) //0x10000694
+#define HX83122A_ADDR_SORTING_MODE_EN      (HX122A_FUNC_BASE+0x04) //0x10000104
+#define HX83122A_ADDR_FW_MODE_STATUS       (HX122A_CFG_BASE+0x88) //0x10000488
+#define HX83122A_ADDR_FW_VER               (HX122A_CFG_BASE+0x04) //0x10000404
+#define HX83122A_ADDR_FW_CFG               (HX122A_CFG_BASE+0x84) //0x10000484
+#define HX83122A_ADDR_FW_VENDOR            (HX122A_CFG_BASE) //0x10000400
+#define HX83122A_ADDR_CUS_INFO             (HX122A_CFG_BASE+0x08) //0x10000408
+#define HX83122A_ADDR_PROJ_INFO            (HX122A_CFG_BASE+0x14) //0x10000414
+#define HX83122A_ADDR_FW_DBG_MSG           (HX122A_FUNC_BASE+0x40) //0x10000140
+
+#define HX83122A_ADDR_CTRL_MPAP_OVL        (HX122A_CFG_BASE+0x3EC) //0x100007EC
+
+#define HX83122A_ADDR_MKEY                 (HX122A_CFG_BASE+0xE8) //0x100004E8
+#define HX83122A_ADDR_RAWDATA_BUF          0x10000A00
+
+#define HX83122A_ADDR_CHK_FW_RELOAD        (HX122A_FUNC_BASE) //0x10000100
+#define HX83122A_ADDR_CHK_FW_RELOAD2       (HX122A_CFG_BASE+0x2C0) //0x100006c0
+#define HX83122A_ADDR_CHK_IRQ_EDGE         (HX122A_CFG_BASE+0x88) //0x10000488
+#define HX83122A_ADDR_INFO_CHANNEL_NUM     (HX122A_CFG_BASE+0xF4) //0x100004f4
+#define HX83122A_ADDR_INFO_MAX_PT          (HX122A_CFG_BASE+0xF8) //0x100004f8
+#define HX83122A_ADDR_INFO_DEF_STYLUS	   (HX122A_CFG_BASE+0x19C) //0x1000059c
+#define HX83122A_ADDR_INFO_STYLUS_RATIO	   (HX122A_CFG_BASE+0x1fc) //0x100005fc
+
+#define HX83122A_ADDR_NORMAL_NOISE_THX   (HX122A_CFG_BASE+0x8C) //0x1000048C
+#define HX83122A_ADDR_LPWUG_NOISE_THX    (HX122A_CFG_BASE+0x90) //0x10000490
+#define HX83122A_ADDR_NOISE_SCALE        (HX122A_CFG_BASE+0x94) //0x10000494
+#define HX83122A_ADDR_RECAL_THX          (HX122A_CFG_BASE+0x90) //0x10000490
+#define HX83122A_ADDR_PALM_NUM           (HX122A_CFG_BASE+0xA8) //0x100004A8
+#define HX83122A_ADDR_WEIGHT_SUP         (HX122A_CFG_BASE+0x2C8) //0x100006C8
+#define HX83122A_ADDR_NORMAL_WEIGHT_A    (HX122A_CFG_BASE+0x9C) //0x1000049C
+#define HX83122A_ADDR_LPWUG_WEIGHT_A     (HX122A_CFG_BASE+0xA0) //0x100004A0
+#define HX83122A_ADDR_WEIGHT_B           (HX122A_CFG_BASE+0x94) //0x10000494
+#define HX83122A_ADDR_MAX_DC             (HX122A_FUNC_BASE+0xC8) //0x100001C8
+#define HX83122A_ADDR_SKIP_FRAME         (HX122A_CFG_BASE+0xF4) //0x100004F4
+#define HX83122A_ADDR_NEG_NOISE_SUP      (HX122A_FUNC_BASE+0xD8) //0x100001D8
